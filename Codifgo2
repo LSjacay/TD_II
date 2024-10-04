@@ -1,0 +1,53 @@
+import RPi.GPIO as GPIO
+import time
+from picamera import PiCamera
+import telegram
+import os
+
+# Configuración del botón y GPIO
+BUTTON_PIN = 17
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# Configuración de la cámara
+camera = PiCamera()
+
+# Configuración del bot de Telegram
+TELEGRAM_BOT_TOKEN = 'TU_TELEGRAM_BOT_TOKEN'
+CHAT_ID = 'TU_CHAT_ID'
+
+bot = telegram.Bot(token=TELEGRAM_BOT_TOKEN)
+
+def send_photo(photo_path):
+    """Función para enviar la foto a Telegram"""
+    try:
+        print("Enviando foto a Telegram...")
+        with open(photo_path, 'rb') as photo:
+            bot.send_photo(chat_id=CHAT_ID, photo=photo)
+        print("Foto enviada exitosamente.")
+    except Exception as e:
+        print(f"Error enviando la foto: {e}")
+
+def start_camera():
+    """Función para activar la cámara y tomar una foto"""
+    print("Botón presionado: Activando cámara y tomando foto...")
+    photo_path = '/home/pi/captured_image.jpg'  # Ruta donde se guardará la foto
+    camera.capture(photo_path)
+    print("Foto tomada. Enviando a Telegram...")
+    send_photo(photo_path)
+
+def button_callback(channel):
+    """Función llamada cuando se presiona el botón"""
+    start_camera()
+
+# Detectar cuando se presiona el botón
+GPIO.add_event_detect(BUTTON_PIN, GPIO.FALLING, callback=button_callback, bouncetime=300)
+
+try:
+    print("Esperando que se presione el timbre...")
+    while True:
+        time.sleep(1)  # Mantiene el programa corriendo
+except KeyboardInterrupt:
+    print("Programa terminado.")
+finally:
+    GPIO.cleanup()  # Limpia los GPIO al finalizar
